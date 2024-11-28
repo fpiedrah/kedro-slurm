@@ -1,43 +1,51 @@
 from __future__ import annotations
 
-from collections import Counter
-from itertools import chain
-from typing import TYPE_CHECKING, Any
-
-from kedro.runner.runner import AbstractRunner
-from kedro.runner.task import Task
-
-if TYPE_CHECKING:
-    from pluggy import PluginManager
-
-    from kedro.io import CatalogProtocol
-    from kedro.pipeline import Pipeline
+import collections
+import itertools
+import typing
 
 from kedro_slurm import slurm
 
+from kedro.io import CatalogProtocol, MemoryDataset
+from kedro.runner.runner import AbstractRunner
 
+if typing.TYPE_CHECKING:
+    from pluggy import PluginManager
+
+    from kedro.pipeline import Pipeline
+    from kedro.pipeline.node import Node
+
+
+# EACH NODE SHOULD HAVE THEIR OWN
 DEFAULT_RESOURCES = slurm.Resources(cpus=4, memory=10)
 DEFAULT_CONFIGURATION = slurm.Configuration(time_limit="1:00:00")
 
 
-def _build(node: str) -> str:
-    KEDRO_COMMAND = "kedro"
+class SLURMRunner(AbstractRunner):
+    def __init__(self, is_async: bool = False):
+        super().__init__(is_async=is_async, extra_dataset_patterns=None)
 
-    return f"{KEDRO_COMMAND} run --nodes {node}"
+    @classmethod
+    def _build_command(cls, node: str) -> str:
+        KEDRO_COMMAND = "kedro"
 
+        return f"{KEDRO_COMMAND} run --nodes {node} --async"
 
-class SLURMSequentialRunner(AbstractRunner):
+    @classmethod
+    def _validate_catalog(cls, catalog: CatalogProtocol, pipeline: Pipeline) -> None:
+        datasets = catalog._datasets
 
-    def __init__(
-        self,
-        is_async: bool = False,
-        extra_dataset_patterns: dict[str, dict[str, Any]] | None = None,
-    ):
-        default_dataset_pattern = {"{default}": {"type": "MemoryDataset"}}
-        self._extra_dataset_patterns = extra_dataset_patterns or default_dataset_pattern
-        super().__init__(
-            is_async=is_async, extra_dataset_patterns=self._extra_dataset_patterns
-        )
+        memory_datasets = []
+        for name, dataset in datasets.items():
+            if name in pipeline.all_outputs() and isinstance(dataset, MemoryDataset):
+                memory_datasets.append(name)
+
+        if memory_datasets:
+            raise AttributeError(
+                f"The following datasets are memory datasets: "
+                f"{sorted(memory_datasets)}\n"
+                f"SLURsMRunner does not support output to MemoryDataSets"
+            )
 
     def _run(
         self,
@@ -46,26 +54,57 @@ class SLURMSequentialRunner(AbstractRunner):
         hook_manager: PluginManager,
         session_id: str | None = None,
     ) -> None:
+        self._validate_catalog(catalog, pipeline)
+
         nodes = pipeline.nodes
-        done_nodes = set()
+        load_counts = collections.Counter(
+            itertools.chain.from_iterable(node.inputs for node in nodes)
+        )
 
-        load_counts = Counter(chain.from_iterable(n.inputs for n in nodes))
+        node_dependencies: dict = pipeline.node_dependencies
+        todo_nodes: set[Node] = set(node_dependencies.keys())
+        done_nodes: set[Node] = set()
+        futures: set[slurm.Future] = set()
 
-        for exec_index, node in enumerate(nodes):
-            try:
-                future = slurm.Job(
+        while True:
+            ready = {
+                node for node in todo_nodes if node_dependencies[node] <= done_nodes
+            }
+
+            todo_nodes -= ready
+            for node in ready:
+                job =  slurm.Job(
                     DEFAULT_RESOURCES, 
                     DEFAULT_CONFIGURATION,
                     node.name,
-                    _build(node.name)
-                ).submit()
+                    self._build_command(node.name)
+                )
 
-                slurm.wait([future])
-            except Exception:
-                self._suggest_resume_scenario(pipeline, done_nodes, catalog)
-                raise
+                futures.add(job.submit())
 
-            self._release_datasets(node, catalog, load_counts, pipeline)
-            self._logger.info(
-                "Completed %d out of %d tasks", len(done_nodes), len(nodes)
-            )
+            if not futures:
+                if todo_nodes:
+                    debug_data = {
+                        "todo_nodes": todo_nodes,
+                        "done_nodes": done_nodes,
+                        "ready_nodes": ready,
+                        "done_futures": done,
+                    }
+
+                    debug_data_str = "\n".join(
+                        f"{key} = {value}" for key, value in debug_data.items()
+                    )
+
+                    raise RuntimeError(
+                        f"Unable to schedule new tasks although some nodes "
+                        f"have not been run:\n{debug_data_str}"
+                    )
+
+                break
+
+            # MISSING ERROR HANDLING
+            slurm.wait(futures)
+            for node in ready:
+                done_nodes.add(node)
+                
+                self._release_datasets(node, catalog, load_counts, pipeline)

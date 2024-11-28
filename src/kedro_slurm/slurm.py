@@ -6,7 +6,6 @@ import pathlib
 import subprocess
 import time
 
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -218,6 +217,7 @@ def wait(futures: list[Future], interval: int = 5) -> None:
             future.update()
 
             if future.changed:
+                # LOGGING NOT WORKING IN KEDRO
                 logging.info(
                     f"{future._identifier}: {future._previous_state} -> {future._state}"
                 )
@@ -236,6 +236,8 @@ def wait(futures: list[Future], interval: int = 5) -> None:
                 missing.discard(future)
 
         if failed:
-            raise SlurmExecutionError("SLURM encountered an error while attempting to execute this task.")
+            raise SlurmExecutionError(
+                "SLURM encountered an error while attempting to execute this task."
+            )
 
         time.sleep(interval)
