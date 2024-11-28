@@ -1,0 +1,19 @@
+[project]
+name = "kedro-slurm"
+version = "0.1.0"
+description = "Tools and runners for deploying and executing Kedro projects on SLURM"
+authors = [
+    {name = "Francisco Piedrahita Velez", email = "fpiedrah@brown.edu"},
+]
+dependencies = ["kedro>=0.19.10"]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "0"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
