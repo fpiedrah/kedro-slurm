@@ -23,7 +23,7 @@ DEFAULT_CONFIGURATION = slurm.Configuration(time_limit="1:00:00")
 def _build(node: str) -> str:
     KEDRO_COMMAND = "kedro"
 
-    return f"{KEDRO_COMMAND} --nodes {node}"
+    return f"{KEDRO_COMMAND} run --nodes {node}"
 
 
 class SLURMSequentialRunner(AbstractRunner):
