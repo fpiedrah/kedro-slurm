@@ -5,6 +5,7 @@ import os
 import pathlib
 import subprocess
 import time
+import typing
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +40,9 @@ class Future:
     _SCANCEL_COMMAND: str = "scancel"
 
     def __init__(self, identifier: str):
-        self._identifier = identifier
-        self._previous_state = None
-        self._state = None
+        self._identifier: str = identifier
+        self._previous_state: Status | None = None
+        self._state: Status | None = None
 
     @property
     def cancelled(self):
@@ -118,7 +119,7 @@ class Future:
 
     def cancel(self) -> None:
         command = self._build_scancel()
-        result = subprocess.run(
+        subprocess.run(
             command,
             text=True,
             check=True,
@@ -148,7 +149,7 @@ class Job:
         return self._name
 
     @property
-    def path(self) -> os.PathLike:
+    def path(self) -> str | os.PathLike:
         return self._path
 
     @property
@@ -204,7 +205,7 @@ class SlurmExecutionError(Exception):
         super().__init__(self.message)
 
 
-def wait(futures: list[Future], interval: int = 5) -> None:
+def wait(futures: typing.Iterable[Future], interval: int = 5) -> None:
     failed = False
     missing = set(futures)
 

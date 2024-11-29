@@ -1,6 +1,6 @@
 import typing
 
-from kedro.pipeline.node import Node, _node_error_message
+from kedro.pipeline.node import Node
 
 from kedro_slurm import slurm
 
@@ -73,7 +73,7 @@ def node(
     resources: slurm.Resources | None = None,
     configuration: slurm.Configuration | None = None,
 ) -> Node:
-    return Node(
+    return SLURMNode(
         func,
         inputs,
         outputs,

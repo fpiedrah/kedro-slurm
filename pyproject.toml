@@ -17,3 +17,14 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+[dependency-groups]
+linting = [
+    "black>=24.10.0",
+    "isort>=5.13.2",
+    "ruff>=0.8.1",
+    "mypy>=1.13.0",
+]
+
+[tool.isort]
+profile = "black"

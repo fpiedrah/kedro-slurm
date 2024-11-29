@@ -21,9 +21,9 @@ class SLURMRunner(AbstractRunner):
         super().__init__(is_async=is_async, extra_dataset_patterns=None)
 
     def _build_command(self, node: str) -> str:
-        KEDRO_COMMAND = "kedro"
+        KEDRO_COMMAND = "kedro run"
 
-        return f"{KEDRO_COMMAND} run --nodes {node} --async"
+        return f"{KEDRO_COMMAND} --async --nodes {node}"
 
     @classmethod
     def _validate_catalog(cls, catalog: CatalogProtocol, pipeline: Pipeline) -> None:
@@ -70,15 +70,15 @@ class SLURMRunner(AbstractRunner):
                 resources: slurm.Resources = SLURMNode._DEFAULT_RESOURCES
                 configuration: slurm.Configuration = SLURMNode._DEFAULT_CONFIGURATION
 
-                if isinstance(node, SLURMNode):
-                    resources = node.resources
-                    configuration = node.configuration
-
                 if not isinstance(node, SLURMNode):
                     self._logger.warning(
                         f"Node {node} is not of type SLURMNode.\n"
                         f"It will be executed with default resources and configuration."
                     )
+
+                if isinstance(node, SLURMNode):
+                    resources = node.resources
+                    configuration = node.configuration
 
                 job = slurm.Job(
                     resources,
@@ -94,7 +94,6 @@ class SLURMRunner(AbstractRunner):
                         "todo_nodes": todo_nodes,
                         "done_nodes": done_nodes,
                         "ready_nodes": ready,
-                        "done_futures": done,
                     }
 
                     debug_data_str = "\n".join(
@@ -108,7 +107,6 @@ class SLURMRunner(AbstractRunner):
 
                 break
 
-            # MISSING ERROR HANDLING
             slurm.wait(futures)
             for node in ready:
                 done_nodes.add(node)
