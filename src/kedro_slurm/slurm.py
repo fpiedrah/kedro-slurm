@@ -7,7 +7,6 @@ import subprocess
 import time
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -217,9 +216,11 @@ def wait(futures: list[Future], interval: int = 5) -> None:
             future.update()
 
             if future.changed:
-                # LOGGING NOT WORKING IN KEDRO
-                logging.info(
-                    f"{future._identifier}: {future._previous_state} -> {future._state}"
+                logger.info(
+                    f"[b][{future._identifier}]:[/b] "
+                    f"[i orange1]{future._previous_state}[/i orange1] "
+                    f"[b]->[/b] [i green]{future._state}[/i green]",
+                    extra={"markup": True},
                 )
 
             if future.cancelled:

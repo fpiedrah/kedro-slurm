@@ -4,29 +4,23 @@ import collections
 import itertools
 import typing
 
-from kedro_slurm import slurm
-
 from kedro.io import CatalogProtocol, MemoryDataset
 from kedro.runner.runner import AbstractRunner
 
-if typing.TYPE_CHECKING:
-    from pluggy import PluginManager
+from kedro_slurm import slurm
+from kedro_slurm.pipeline.node import SLURMNode
 
+if typing.TYPE_CHECKING:
     from kedro.pipeline import Pipeline
     from kedro.pipeline.node import Node
-
-
-# EACH NODE SHOULD HAVE THEIR OWN
-DEFAULT_RESOURCES = slurm.Resources(cpus=4, memory=10)
-DEFAULT_CONFIGURATION = slurm.Configuration(time_limit="1:00:00")
+    from pluggy import PluginManager
 
 
 class SLURMRunner(AbstractRunner):
     def __init__(self, is_async: bool = False):
         super().__init__(is_async=is_async, extra_dataset_patterns=None)
 
-    @classmethod
-    def _build_command(cls, node: str) -> str:
+    def _build_command(self, node: str) -> str:
         KEDRO_COMMAND = "kedro"
 
         return f"{KEDRO_COMMAND} run --nodes {node} --async"
@@ -73,15 +67,27 @@ class SLURMRunner(AbstractRunner):
 
             todo_nodes -= ready
             for node in ready:
-                job =  slurm.Job(
-                    DEFAULT_RESOURCES, 
-                    DEFAULT_CONFIGURATION,
+                resources: slurm.Resources = SLURMNode._DEFAULT_RESOURCES
+                configuration: slurm.Configuration = SLURMNode._DEFAULT_CONFIGURATION
+
+                if isinstance(node, SLURMNode):
+                    resources = node.resources
+                    configuration = node.configuration
+
+                if not isinstance(node, SLURMNode):
+                    self._logger.warning(
+                        f"Node {node} is not of type SLURMNode.\n"
+                        f"It will be executed with default resources and configuration."
+                    )
+
+                job = slurm.Job(
+                    resources,
+                    configuration,
                     node.name,
-                    self._build_command(node.name)
+                    self._build_command(node.name),
                 )
 
                 futures.add(job.submit())
-
             if not futures:
                 if todo_nodes:
                     debug_data = {
@@ -106,5 +112,5 @@ class SLURMRunner(AbstractRunner):
             slurm.wait(futures)
             for node in ready:
                 done_nodes.add(node)
-                
+
                 self._release_datasets(node, catalog, load_counts, pipeline)
