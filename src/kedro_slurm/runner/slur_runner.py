@@ -83,7 +83,7 @@ class SLURMRunner(AbstractRunner):
                 job = slurm.Job(
                     resources,
                     configuration,
-                    node.name,
+                    node.func.__name__,
                     self._build_command(node.name),
                 )
 
