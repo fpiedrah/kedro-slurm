@@ -23,7 +23,7 @@ class SLURMRunner(AbstractRunner):
     def _build_command(self, node: str) -> str:
         KEDRO_COMMAND = "kedro run"
 
-        return f"{KEDRO_COMMAND} --async --nodes {node}"
+        return f"{KEDRO_COMMAND} --async --nodes '{node}'"
 
     @classmethod
     def _validate_catalog(cls, catalog: CatalogProtocol, pipeline: Pipeline) -> None:
@@ -72,7 +72,7 @@ class SLURMRunner(AbstractRunner):
 
                 if not isinstance(node, SLURMNode):
                     self._logger.warning(
-                        f"Node {node} is not of type SLURMNode.\n"
+                        f"Node {node} is not of type SLURMNode (actual type: {type(node).__name__}).\n"
                         f"It will be executed with default resources and configuration."
                     )
 
@@ -80,10 +80,11 @@ class SLURMRunner(AbstractRunner):
                     resources = node.resources
                     configuration = node.configuration
 
+                print(self._build_command(node.name))
                 job = slurm.Job(
                     resources,
                     configuration,
-                    node.name,
+                    node.func.__name__,
                     self._build_command(node.name),
                 )
 
