@@ -174,7 +174,7 @@ class Job:
             if value is not None:
                 command.append(f"{option}={value}")
 
-        return command + ["--parsable", "--wrap", f"'{self._command}'"]
+        return command + ["--parsable", "--wrap", f'"{self._command}"']
 
     def submit(self) -> Future:
 
