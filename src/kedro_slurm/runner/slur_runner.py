@@ -72,7 +72,7 @@ class SLURMRunner(AbstractRunner):
 
                 if not isinstance(node, SLURMNode):
                     self._logger.warning(
-                        f"Node {node} is not of type SLURMNode.\n"
+                        f"Node {node} is not of type SLURMNode (actual type: {type(node).__name__}).\n"
                         f"It will be executed with default resources and configuration."
                     )
 
