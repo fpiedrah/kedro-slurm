@@ -70,6 +70,7 @@ class SLURMRunner(AbstractRunner):
                 resources: slurm.Resources = SLURMNode._DEFAULT_RESOURCES
                 configuration: slurm.Configuration = SLURMNode._DEFAULT_CONFIGURATION
 
+                print(pipeline.node_dependencies)
                 if not isinstance(node, SLURMNode):
                     self._logger.warning(
                         f"Node {node} is not of type SLURMNode (actual type: {type(node).__name__}).\n"
@@ -80,6 +81,7 @@ class SLURMRunner(AbstractRunner):
                     resources = node.resources
                     configuration = node.configuration
 
+                print("----------------")
                 print(self._build_command(node.name))
                 job = slurm.Job(
                     resources,
