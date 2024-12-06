@@ -23,7 +23,7 @@ class SLURMRunner(AbstractRunner):
     def _build_command(self, node: str) -> str:
         KEDRO_COMMAND = "kedro run"
 
-        return f"{KEDRO_COMMAND} --async --nodes \\\'{node}\\\'"
+        return f"{KEDRO_COMMAND} --async --nodes '{node}'"
 
     @classmethod
     def _validate_catalog(cls, catalog: CatalogProtocol, pipeline: Pipeline) -> None:
