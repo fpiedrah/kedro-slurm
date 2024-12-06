@@ -60,6 +60,28 @@ class SLURMNode(Node):
     def configuration(self):
         return self._configuration
 
+    def _copy(self, **overwrite_params: typing.Any) -> Node:
+        params = {
+            "func": self._func,
+            "inputs": self._inputs,
+            "outputs": self._outputs,
+            "name": self._name,
+            "namespace": self._namespace,
+            "tags": self._tags,
+            "confirms": self._confirms,
+            "resources": self._resources,
+            "configuration": self._configuration,
+        }
+
+        params.update(overwrite_params)
+        return SLURMNode(**params)
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return (
+            f"SLURMNode({self._func_name}, {self._inputs!r}, {self._outputs!r}, "
+            f"{self._name!r})"
+        )
+
 
 def node(
     func: typing.Callable,
@@ -72,7 +94,7 @@ def node(
     namespace: str | None = None,
     resources: slurm.Resources | None = None,
     configuration: slurm.Configuration | None = None,
-) -> Node:
+) -> SLURMNode:
     return SLURMNode(
         func,
         inputs,
