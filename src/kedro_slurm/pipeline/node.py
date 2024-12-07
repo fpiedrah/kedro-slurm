@@ -72,7 +72,7 @@ class SLURMNode(Node):
             "resources": self._resources,
             "configuration": self._configuration,
         }
-        
+
         params.update(overwrite_params)
         return SLURMNode(**params)
 
