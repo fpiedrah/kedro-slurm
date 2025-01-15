@@ -23,7 +23,7 @@ class SLURMRunner(AbstractRunner):
     def _build_command(self, node: str) -> str:
         KEDRO_COMMAND = "kedro run"
 
-        return f"{KEDRO_COMMAND} --async --nodes '{node}'"
+        return f"{KEDRO_COMMAND} --nodes '{node}'"
 
     @classmethod
     def _validate_catalog(cls, catalog: CatalogProtocol, pipeline: Pipeline) -> None:
@@ -55,10 +55,11 @@ class SLURMRunner(AbstractRunner):
             itertools.chain.from_iterable(node.inputs for node in nodes)
         )
 
+        identifier_mapping: dict[Node, str] = {}
         node_dependencies: dict = pipeline.node_dependencies
         todo_nodes: set[Node] = set(node_dependencies.keys())
         done_nodes: set[Node] = set()
-        futures: set[slurm.Future] = set()
+        futures: set[slurm.Job] = set()
 
         while True:
             ready = {
@@ -66,7 +67,10 @@ class SLURMRunner(AbstractRunner):
             }
 
             todo_nodes -= ready
+            ran_some_node = False
+
             for node in ready:
+                future_dependencies: list = []
                 resources: slurm.Resources = SLURMNode._DEFAULT_RESOURCES
                 configuration: slurm.Configuration = SLURMNode._DEFAULT_CONFIGURATION
 
@@ -85,30 +89,27 @@ class SLURMRunner(AbstractRunner):
                     configuration,
                     node.func.__name__,
                     self._build_command(node.name),
+                    [
+                        identifier_mapping[dependency]
+                        for dependency in node_dependencies[node]
+                    ],
                 )
 
-                futures.add(job.submit())
-            if not futures:
-                if todo_nodes:
-                    debug_data = {
-                        "todo_nodes": todo_nodes,
-                        "done_nodes": done_nodes,
-                        "ready_nodes": ready,
-                    }
+                try:
+                    identifier = job.submit()
 
-                    debug_data_str = "\n".join(
-                        f"{key} = {value}" for key, value in debug_data.items()
-                    )
+                    ran_some_node = True
+                    identifier_mapping[node] = identifier
+                except Exception:
+                    self._suggest_resume_scenario(pipeline, done_nodes, catalog)
+                    raise
 
-                    raise RuntimeError(
-                        f"Unable to schedule new tasks although some nodes "
-                        f"have not been run:\n{debug_data_str}"
-                    )
-
-                break
-
-            slurm.wait(futures)
-            for node in ready:
                 done_nodes.add(node)
+                self._logger.info(
+                    f"Submitted node '{node.func.__name__}' with ID '{identifier}'"
+                )
 
-                self._release_datasets(node, catalog, load_counts, pipeline)
+            if not ran_some_node:
+                if todo_nodes:
+                    self._suggest_resume_scenario(pipeline, done_nodes, catalog)
+                break
