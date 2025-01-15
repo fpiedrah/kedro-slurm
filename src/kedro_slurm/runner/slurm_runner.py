@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import itertools
+import os
 import typing
 
 from kedro.io import CatalogProtocol, MemoryDataset
@@ -23,7 +24,13 @@ class SLURMRunner(AbstractRunner):
     def _build_command(self, node: str) -> str:
         KEDRO_COMMAND = "kedro run"
 
-        return f"{KEDRO_COMMAND} --nodes '{node}'"
+        # FIND A BETTER WAY TO PASS THE ENV
+        env = os.environ.get("KEDRO_ENV", None)
+
+        if not env:
+            return f"{KEDRO_COMMAND} --nodes '{node}'"
+
+        return f"{KEDRO_COMMAND} --env {env} --nodes '{node}'"
 
     @classmethod
     def _validate_catalog(cls, catalog: CatalogProtocol, pipeline: Pipeline) -> None:
