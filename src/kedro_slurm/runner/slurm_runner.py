@@ -34,6 +34,8 @@ class SLURMRunner(AbstractRunner):
             command_parts.append(f"--env {env}")
 
         if params:
+            print(params)
+            print(type(params))
             command_parts.append(f"--params '{--params}'")
 
         return " ".join(command_parts)
