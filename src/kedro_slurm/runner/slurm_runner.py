@@ -24,13 +24,19 @@ class SLURMRunner(AbstractRunner):
     def _build_command(self, node: str) -> str:
         KEDRO_COMMAND = "kedro run"
 
-        # FIND A BETTER WAY TO PASS THE ENV
+        # FIND A BETTER WAY TO PASS THE ENV AND PARAMS
         env = os.environ.get("KEDRO_ENV", None)
+        params = os.environ.get("KEDRO_PARAMS", None)
+
+        cmd = [f"{KEDRO_COMMAND}", f"--nodes '{node}'"]
 
         if not env:
-            return f"{KEDRO_COMMAND} --nodes '{node}'"
+            return cmd.append(f"--env {env}")
 
-        return f"{KEDRO_COMMAND} --env {env} --nodes '{node}'"
+        if not params:
+            return cmd.append(f"--params '{params}'")
+
+        return " ".join(cmd)
 
     @classmethod
     def _validate_catalog(cls, catalog: CatalogProtocol, pipeline: Pipeline) -> None:
