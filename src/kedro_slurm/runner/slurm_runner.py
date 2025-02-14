@@ -36,7 +36,7 @@ class SLURMRunner(AbstractRunner):
         if params:
             print(params)
             print(type(params))
-            command_parts.append(f"--params '{--params}'")
+            command_parts.append(f"--params '{params}'")
 
         return " ".join(command_parts)
 
