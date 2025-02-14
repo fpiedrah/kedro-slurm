@@ -36,6 +36,7 @@ class SLURMRunner(AbstractRunner):
         if not params:
             return cmd.append(f"--params '{params}'")
 
+        print(" ".join(cmd))
         return " ".join(cmd)
 
     @classmethod
