@@ -34,29 +34,9 @@ class SLURMRunner(AbstractRunner):
             command_parts.append(f"--env {env}")
 
         if params:
-            print(params)
-            print(type(params))
             command_parts.append(f"--params '{params}'")
 
         return " ".join(command_parts)
-
-    #def _build_command(self, node: str) -> str:
-    #    KEDRO_COMMAND = "kedro run"
-
-    #    # FIND A BETTER WAY TO PASS THE ENV AND PARAMS
-    #    env = os.environ.get("KEDRO_ENV", None)
-    #    params = os.environ.get("KEDRO_PARAMS", None)
-
-    #    cmd = [f"{KEDRO_COMMAND}", f"--nodes '{node}'"]
-
-    #    if not env:
-    #        return cmd.append(f"--env {env}")
-
-    #    if not params:
-    #        return cmd.append(f"--params '{params}'")
-
-    #    print(" ".join(cmd))
-    #    return " ".join(cmd)
 
     @classmethod
     def _validate_catalog(cls, catalog: CatalogProtocol, pipeline: Pipeline) -> None:
@@ -120,7 +100,7 @@ class SLURMRunner(AbstractRunner):
                 job = slurm.Job(
                     resources,
                     configuration,
-                    node.func.__name__,
+                    node.name,
                     self._build_command(node.name),
                     [
                         identifier_mapping[dependency]
