@@ -71,6 +71,7 @@ class Job:
             "--mem": f"{self._resources.memory}G",
             "--time": self._configuration.time_limit,
             "--partition": self._configuration.partition_name,
+            "--account": self._configuration.account_name,
             "--dependency": (
                 ",".join(
                     [
