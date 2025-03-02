@@ -20,6 +20,7 @@ class Resources:
 @dataclasses.dataclass(frozen=True)
 class Configuration:
     time_limit: str
+    constraint: str | None = None
     account_name: str | None = None
     partition_name: str | None = None
 
@@ -72,6 +73,7 @@ class Job:
             "--time": self._configuration.time_limit,
             "--partition": self._configuration.partition_name,
             "--account": self._configuration.account_name,
+            "--constraint": self._configuration.constraint,
             "--dependency": (
                 ",".join(
                     [
