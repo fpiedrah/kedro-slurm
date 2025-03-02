@@ -24,7 +24,7 @@ class SLURMRunner(AbstractRunner):
     def _build_command(self, node: str) -> str:
         KEDRO_COMMAND = "kedro run"
 
-        # FIND A BETTER WAY TO PASS THE ENV
+        # FIND A BETTER WAY TO PASS THE ENV AND PARAMS
         env = os.environ.get("KEDRO_ENV", None)
         params = os.environ.get("KEDRO_PARAMS", None)
 

@@ -1,6 +1,6 @@
 [project]
 name = "kedro-slurm"
-version = "0.1.2"
+version = "0.1.3"
 description = "Tools and runners for deploying and executing Kedro projects on SLURM"
 authors = [
     {name = "Francisco Piedrahita Velez", email = "fpiedrah@brown.edu"},

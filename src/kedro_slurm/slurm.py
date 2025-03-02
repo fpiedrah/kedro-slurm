@@ -20,6 +20,7 @@ class Resources:
 @dataclasses.dataclass(frozen=True)
 class Configuration:
     time_limit: str
+    account_name: str | None = None
     partition_name: str | None = None
 
 
